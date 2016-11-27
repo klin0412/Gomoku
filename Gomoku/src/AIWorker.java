@@ -55,6 +55,7 @@ public class AIWorker
 		}
 		/*for(int depth = 1; depth < MAX_DEPTH; depth++)
 		{
+			TODO: speed up search algorithm and return correct move
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)
 				break;
@@ -230,6 +231,5 @@ public class AIWorker
 		else
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
 		return best;
-		//TODO: get next move from value
 	}
 }
