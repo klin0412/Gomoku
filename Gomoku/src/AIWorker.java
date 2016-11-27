@@ -50,7 +50,7 @@ public class AIWorker
 		int firstGuess = threatSpace(rootNode);
 		if(firstGuess > 0)
 		{
-			principalVariation.add(threatVariation.get(0));
+			principalVariation.push(threatVariation.get(0));
 			return firstGuess;
 		}
 		/*for(int depth = 1; depth < MAX_DEPTH; depth++)
@@ -180,6 +180,7 @@ public class AIWorker
 	
 	private int alphaBetaTT(Node node, int alpha, int beta, int depth)
 	{
+		//TODO: understand the principalVariation
 		MapEntry entry = transpositionTable.get(node.getZobristKey());
 		if(entry != null && entry.getDepth() >= depth)
 		{
@@ -206,23 +207,32 @@ public class AIWorker
 		for(Node child: node.getChildren())
 		{
 			nodeExp++;
-			value = -alphaBetaTT(child, -beta, -alpha, depth-1);
-			if(value > best)
-				best = value;
-			if(best > alpha)
+			value = threatSpace(child); //need to check on this implementation
+			if(value > 0)
 			{
-				alpha = best;
-				Integer occurrence = history.get(node.getZobristKey());
-				if(occurrence == null)
-					history.put(node.getZobristKey(), 0);
-				else
-					history.put(node.getZobristKey(), occurrence+1);
+				best = value;
+				principalVariation.push(threatVariation.get(0));
 				principalVariation.push(node.getMove());
 			}
-			if(best >= beta)
-				break;
+			else
+			{
+				value = -alphaBetaTT(child, -beta, -alpha, depth-1);
+				if(value > best)
+					best = value;
+				if(best > alpha)
+				{
+					alpha = best;
+					Integer occurrence = history.get(node.getZobristKey());
+					if(occurrence == null)
+						history.put(node.getZobristKey(), 0);
+					else
+						history.put(node.getZobristKey(), occurrence+1);
+					principalVariation.push(node.getMove());
+				}
+				if(best >= beta)
+					break;
+			}
 		}
-		
 		
 		if(best <= alpha)
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.LOWERBOUND));
