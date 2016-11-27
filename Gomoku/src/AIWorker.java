@@ -53,13 +53,13 @@ public class AIWorker
 			principalVariation.push(threatVariation.get(0));
 			return firstGuess;
 		}
-		/*for(int depth = 1; depth < MAX_DEPTH; depth++)
+		for(int depth = 1; depth < MAX_DEPTH; depth++)
 		{
-			TODO: speed up search algorithm and return correct move
+			//TODO: speed up search algorithm and return correct move
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)
 				break;
-		}*/
+		}
 		return firstGuess;
 	}
 	
@@ -207,7 +207,7 @@ public class AIWorker
 		for(Node child: node.getChildren())
 		{
 			nodeExp++;
-			value = threatSpace(child); //need to check on this implementation
+			value = threatSpace(child);
 			if(value > 0)
 			{
 				best = value;

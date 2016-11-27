@@ -63,10 +63,7 @@ public class Tile extends Canvas
 				if(Board.getInstance().getDTurn() == 1)
 				{
 					int value = solver.iterativeDeepening();
-					if(value > 0)
-						for(Move move: solver.getThreatVariation())
-							System.out.println("Play: "+move);
-					//System.out.println(solver.bestMove());
+					System.out.println(solver.bestMove());
 					//System.out.println(solver.nodeExp);
 				}
 				
@@ -85,10 +82,7 @@ public class Tile extends Canvas
 				if(Board.getInstance().getDTurn() == 1)
 				{
 					int value = solver.iterativeDeepening();
-					if(value > 0)
-						for(Move move: solver.getThreatVariation())
-							System.out.println("Play: "+move);
-					//System.out.println(solver.bestMove());
+					System.out.println(solver.bestMove());
 					//System.out.println(solver.nodeExp);
 				}
 			}
