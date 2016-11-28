@@ -38,7 +38,11 @@ public class AIWorker
 
 	public Move bestMove()
 	{
-		return principalVariation.pop();
+		System.out.println(principalVariation.size());
+		if(principalVariation.size()> 0)
+			return principalVariation.pop();
+		else
+			return null;
 	}
 	
 	//Threat Space Search: http://vanilla47.com/PDFs/Gomoku%20Renju%20Pente/go-moku-and-threat.pdf
@@ -52,14 +56,14 @@ public class AIWorker
 		{
 			principalVariation.push(threatVariation.get(0));
 			return firstGuess;
-		}
+		}/*
 		for(int depth = 1; depth < MAX_DEPTH; depth++)
 		{
 			//TODO: speed up search algorithm and return correct move
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)
 				break;
-		}
+		}*/
 		return firstGuess;
 	}
 	
