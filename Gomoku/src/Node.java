@@ -10,7 +10,7 @@ public class Node implements Comparable<Node>
 	private Move move;
 	private ArrayList<Move> fiveSquares, fourSquares, gainSquares;
 	private int value;
-	private int occurrence;
+	private Node parent;
 	private ArrayList<Node> children;
 	private int radius = 1;
 	private int zobristKey;
@@ -29,7 +29,7 @@ public class Node implements Comparable<Node>
 		fourSquares = new ArrayList<Move>();
 		gainSquares = new ArrayList<Move>();
 		value = 0;
-		occurrence = 0;
+		parent = null;
 		children = new ArrayList<Node>();
 		zobristKey = (int)hash();
 	}
@@ -111,9 +111,9 @@ public class Node implements Comparable<Node>
 			score -= Score.DOUBLE.value()*size;
 		}
 		if(getTurn() == Board.BLACK_TURN)
-			value = score;
-		else if(getTurn() == Board.WHITE_TURN)
 			value = -score;
+		else if(getTurn() == Board.WHITE_TURN)
+			value = score;
 		return value;
 	}
 	
@@ -127,16 +127,6 @@ public class Node implements Comparable<Node>
 		this.value = value;
 	}
 
-	public int getOccurrence()
-	{
-		return occurrence;
-	}
-	
-	public void setOccurrence(int occurrence)
-	{
-		this.occurrence = occurrence;
-	}
-
 	public ArrayList<Node> getChildren()
 	{
 		return children;
@@ -144,6 +134,7 @@ public class Node implements Comparable<Node>
 	
 	public void generateChildren(HashMap<Integer, Integer> history)
 	{
+		//TODO: combine child value and history heuristics
 		int topBound = -1;
 		int bottomBound = Board.BOARD_SIZE;
 		int leftBound = -1;
@@ -180,9 +171,13 @@ public class Node implements Comparable<Node>
 					{
 						Node child = nextNode(new Move(grid[row][col]));
 						children.add(child);
-						Integer occurrence = history.get(child.getZobristKey());
+						child.setParent(this);
+						Integer occurrence = history.get(child.getMove().hashCode());
 						if(occurrence != null)
-							child.setOccurrence(occurrence);
+						{
+							child.getMove().setOccurrence(occurrence);
+							System.out.println(occurrence);
+						}
 					}
 				}
 				catch(ArrayIndexOutOfBoundsException e) {continue;}
@@ -191,6 +186,16 @@ public class Node implements Comparable<Node>
 		children.sort((n1, n2) -> n1.compareTo(n2));
 	}
 	
+	public Node getParent()
+	{
+		return parent;
+	}
+
+	public void setParent(Node parent)
+	{
+		this.parent = parent;
+	}
+
 	public int getZobristKey()
 	{
 		return zobristKey;
@@ -302,6 +307,6 @@ public class Node implements Comparable<Node>
 	@Override
 	public int compareTo(Node o)
 	{
-		return o.getOccurrence() - occurrence;
+		return move.compareTo(o.getMove());
 	}
 }

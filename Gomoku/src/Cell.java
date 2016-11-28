@@ -330,8 +330,7 @@ public class Cell
 			try
 			{
 				boolean formed = true;
-				
-				for(int i = -2; i <= 3; i++)
+				for(int i = -1; i <= 2; i++)
 				{
 					if(i == 0)
 						continue;
@@ -346,7 +345,6 @@ public class Cell
 						break;
 					}
 				}
-				
 				if(formed)
 					doubles.add(direction);
 			}
@@ -392,9 +390,9 @@ public class Cell
 	public String toString()
 	{
 		if(type == Stone.BLACK.type())
-			return "œ";
+			return "â—";
 		else if(type == Stone.WHITE.type())
-			return "›";
+			return "â—‹";
 		else
 			return " ";
 	}

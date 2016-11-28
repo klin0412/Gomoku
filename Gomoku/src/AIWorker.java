@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Stack;
 
 public class AIWorker
@@ -11,6 +12,8 @@ public class AIWorker
 	private HashMap<Integer, MapEntry> transpositionTable;
 	private HashMap<Integer, Integer> history;
 	private ArrayList<Move> threatVariation;
+	private LinkedList<Node> exactNodes;
+	private HashMap<Integer, Integer> bestMoves;
 	private Stack<Move> principalVariation;
 	private int startTime, maxTime;
 	public int nodeExp;
@@ -22,6 +25,8 @@ public class AIWorker
 		transpositionTable = new HashMap<Integer, MapEntry>();
 		history = new HashMap<Integer, Integer>();
 		threatVariation = new ArrayList<Move>();
+		exactNodes = new LinkedList<Node>();
+		bestMoves = new HashMap<Integer, Integer>();
 		principalVariation = new Stack<Move>();
 		maxTime = 10000;
 	}
@@ -36,9 +41,36 @@ public class AIWorker
 		return threatVariation;
 	}
 
-	public Move bestMove()
+	public Move bestMove(int value)
 	{
-		return principalVariation.pop();
+		for(int i = exactNodes.size()-1; i >= 0; i--)
+			if(exactNodes.get(i).getValue() != value)
+				exactNodes.remove(i);
+		ArrayList<Move> moves = new ArrayList<Move>();
+		for(Node node: exactNodes)
+		{
+			principalVariation.clear();
+			while(node.getParent() != null)
+			{
+				principalVariation.push(node.getMove());
+				node = node.getParent();
+			}
+			Integer occurrence = bestMoves.get(principalVariation.peek().hashCode());
+			if(occurrence == null)
+			{
+				bestMoves.put(principalVariation.peek().hashCode(), 1);
+				moves.add(principalVariation.peek());
+			}
+			else
+			{
+				principalVariation.peek().setOccurrence(occurrence+1);
+				bestMoves.put(principalVariation.peek().hashCode(), occurrence+1);
+			}
+		}
+		moves.sort((m1, m2) -> m1.compareTo(m2));
+		//for(Move move: moves)
+			//System.out.println(move.getOccurrence());
+		return moves.get(0);
 	}
 	
 	//Threat Space Search: http://vanilla47.com/PDFs/Gomoku%20Renju%20Pente/go-moku-and-threat.pdf
@@ -56,6 +88,7 @@ public class AIWorker
 		for(int depth = 1; depth < MAX_DEPTH; depth++)
 		{
 			//TODO: speed up search algorithm and return correct move
+			exactNodes.clear();
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)
 				break;
@@ -103,13 +136,13 @@ public class AIWorker
 					{
 						Node finalNode = nextRespondedNode.nextNode(nextMove);
 						threatVariation.add(finalNode.getMove());
-						return -finalNode.calcValue();
+						return finalNode.calcValue();
 					}
 					for(Move nextMove: nextRespondedNode.getFourSquares())
 					{
 						Node finalNode = nextRespondedNode.nextNode(nextMove);
 						threatVariation.add(finalNode.getMove());
-						return -finalNode.calcValue();
+						return finalNode.calcValue();
 					}
 					int result = threatSpace(nextRespondedNode, move);
 					if(result == 0)
@@ -199,7 +232,7 @@ public class AIWorker
 		{
 			value = node.calcValue();
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, value, MapEntry.EXACT));
-			principalVariation.clear();
+			exactNodes.add(node);
 			return value;
 		}
 		int best = -Score.FIVE.value()-1;
@@ -207,31 +240,22 @@ public class AIWorker
 		for(Node child: node.getChildren())
 		{
 			nodeExp++;
-			value = threatSpace(child);
-			if(value > 0)
-			{
+			value = -alphaBetaTT(child, -beta, -alpha, depth-1);
+			if(value > best)
 				best = value;
-				principalVariation.push(threatVariation.get(0));
-				principalVariation.push(node.getMove());
-			}
-			else
+			if(best > alpha)
 			{
-				value = -alphaBetaTT(child, -beta, -alpha, depth-1);
-				if(value > best)
-					best = value;
-				if(best > alpha)
-				{
-					alpha = best;
-					Integer occurrence = history.get(node.getZobristKey());
-					if(occurrence == null)
-						history.put(node.getZobristKey(), 0);
-					else
-						history.put(node.getZobristKey(), occurrence+1);
-					principalVariation.push(node.getMove());
-				}
-				if(best >= beta)
-					break;
+				alpha = best;
+				Integer occurrence = null;
+				if(node.getMove() != null)
+					occurrence = history.get(node.getMove().hashCode());
+				if(occurrence == null && node.getMove() != null)
+					history.put(node.getMove().hashCode(), 0);
+				else if(node.getMove() != null)
+					history.put(node.getMove().hashCode(), occurrence+1);
 			}
+			if(best >= beta)
+				break;
 		}
 		
 		if(best <= alpha)

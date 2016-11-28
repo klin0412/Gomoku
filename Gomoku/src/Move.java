@@ -1,11 +1,13 @@
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Objects;
 
-public class Move
+public class Move implements Comparable<Move>
 {
 	private Cell cell;
 	private boolean five, straightFour;
 	private ArrayList<HashSet<Cell>> costSquares, restSquares;
+	private int occurrence;
 	
 	public Move(Cell cell)
 	{
@@ -14,6 +16,7 @@ public class Move
 		straightFour = false;
 		costSquares = new ArrayList<HashSet<Cell>>();
 		restSquares = new ArrayList<HashSet<Cell>>();
+		occurrence = 0;
 	}
 	
 	public void generateCostRest()
@@ -89,6 +92,22 @@ public class Move
 		return restSquares;
 	}
 	
+	public int getOccurrence()
+	{
+		return occurrence;
+	}
+
+	public void setOccurrence(int occurrence)
+	{
+		this.occurrence = occurrence;
+	}
+
+	@Override
+	public int hashCode()
+	{
+		return Objects.hash(cell.getRow(), cell.getCol());
+	}
+	
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -100,5 +119,11 @@ public class Move
 	public String toString()
 	{
 		return cell.getRow()+"x"+cell.getCol();
+	}
+
+	@Override
+	public int compareTo(Move o)
+	{
+		return o.getOccurrence() - occurrence;
 	}
 }
