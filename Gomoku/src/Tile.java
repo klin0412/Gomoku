@@ -56,17 +56,30 @@ public class Tile extends Canvas
 				type = Stone.BLACK.type();
 				cell.setType(Stone.BLACK.type());
 				Board.getInstance().getBlackStones().add(cell);
+				Cell[][] grid = Board.getInstance().getGrid();
+				for(int i = -Node.getRadius(); i <= Node.getRadius(); i++)
+				{
+					for(int j = -Node.getRadius(); j <= Node.getRadius(); j++)
+					{
+						try
+						{
+							Cell cell = grid[row+i][col+j];
+							if(cell.getType() == Stone.EMPTY.type())
+								Node.getCellToExamine().add(cell);
+						}
+						catch(ArrayIndexOutOfBoundsException ex) {continue;}
+					}
+				}
+				Node.getCellToExamine().remove(cell);
 				Board.getInstance().nextTurn(); //next turn, so AI work as white
-				AIWorker solver = new AIWorker(Board.getInstance().toNode());
-				//System.out.println(solver.getRootNode().calcValue());
 				
+				AIWorker solver = new AIWorker(Board.getInstance().toNode());
 				if(Board.getInstance().getDTurn() == 1)
 				{
 					int value = solver.iterativeDeepening();
-					System.out.println(solver.bestMove());
-					//System.out.println(solver.nodeExp);
+					System.out.println("Value: "+value);
+					System.out.println("Play: "+solver.bestMove(value));
 				}
-				
 			}
 			else if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.WHITE_TURN)
 			{
@@ -75,15 +88,29 @@ public class Tile extends Canvas
 				type = Stone.WHITE.type();
 				cell.setType(Stone.WHITE.type());
 				Board.getInstance().getWhiteStones().add(cell);
+				Cell[][] grid = Board.getInstance().getGrid();
+				for(int i = -Node.getRadius(); i <= Node.getRadius(); i++)
+				{
+					for(int j = -Node.getRadius(); j <= Node.getRadius(); j++)
+					{
+						try
+						{
+							Cell cell = grid[row+i][col+j];
+							if(cell.getType() == Stone.EMPTY.type())
+								Node.getCellToExamine().add(cell);
+						}
+						catch(ArrayIndexOutOfBoundsException ex) {continue;}
+					}
+				}
+				Node.getCellToExamine().remove(cell);
 				Board.getInstance().nextTurn(); //next turn, so AI work as black
-				AIWorker solver = new AIWorker(Board.getInstance().toNode());
-				//System.out.println(solver.getRootNode().calcValue());
 				
+				AIWorker solver = new AIWorker(Board.getInstance().toNode());
 				if(Board.getInstance().getDTurn() == 1)
 				{
 					int value = solver.iterativeDeepening();
-					System.out.println(solver.bestMove());
-					//System.out.println(solver.nodeExp);
+					System.out.println("Value: "+value);
+					System.out.println("Play: "+solver.bestMove(value));
 				}
 			}
 		});

@@ -1,18 +1,21 @@
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class Node implements Comparable<Node>
 {
+	private static HashSet<Cell> cellToExamine = new HashSet<Cell>();
+	private static int radius = 1;
 	private Cell[][] grid;
 	private ArrayList<Cell> blackStones, whiteStones;
 	private int turn;
 	private Move move;
 	private ArrayList<Move> fiveSquares, fourSquares, gainSquares;
+	private ArrayList<HashSet<Cell>> costSquares, restSquares;
 	private int value;
-	private int occurrence;
+	private Node parent;
 	private ArrayList<Node> children;
-	private int radius = 1;
 	private int zobristKey;
 	
 	public Node(Cell[][] grid, ArrayList<Cell> blackStones, ArrayList<Cell> whiteStones, int turn, Move move)
@@ -28,12 +31,24 @@ public class Node implements Comparable<Node>
 		fiveSquares = new ArrayList<Move>();
 		fourSquares = new ArrayList<Move>();
 		gainSquares = new ArrayList<Move>();
+		costSquares = new ArrayList<HashSet<Cell>>();
+		restSquares = new ArrayList<HashSet<Cell>>();
 		value = 0;
-		occurrence = 0;
+		parent = null;
 		children = new ArrayList<Node>();
 		zobristKey = (int)hash();
 	}
 	
+	public static HashSet<Cell> getCellToExamine()
+	{
+		return cellToExamine;
+	}
+
+	public static int getRadius()
+	{
+		return radius;
+	}
+
 	public Cell[][] getGrid()
 	{
 		return grid;
@@ -93,6 +108,8 @@ public class Node implements Comparable<Node>
 			score += Score.FOUR.value()*size;
 			size = stone.threes(null, null).size();
 			score += Score.THREE.value()*size;
+			size = stone.brokenThrees(null, null).size();
+			score += Score.BROKEN_THREE.value()*size;
 			size = stone.doubles().size();
 			score += Score.DOUBLE.value()*size;
 		}
@@ -105,15 +122,17 @@ public class Node implements Comparable<Node>
 				score -= Score.STRAIGHT_FOUR.value();
 			size = stone.fours(null, null).size();
 			score -= Score.FOUR.value()*size;
-			size = stone.threes(null, null).size();
+			size = stone.threes(null, null).size() + stone.brokenThrees(null, null).size();
 			score -= Score.THREE.value()*size;
+			size = stone.brokenThrees(null, null).size();
+			score -= Score.BROKEN_THREE.value()*size;
 			size = stone.doubles().size();
 			score -= Score.DOUBLE.value()*size;
 		}
 		if(getTurn() == Board.BLACK_TURN)
-			value = score;
-		else if(getTurn() == Board.WHITE_TURN)
 			value = -score;
+		else if(getTurn() == Board.WHITE_TURN)
+			value = score;
 		return value;
 	}
 	
@@ -127,16 +146,6 @@ public class Node implements Comparable<Node>
 		this.value = value;
 	}
 
-	public int getOccurrence()
-	{
-		return occurrence;
-	}
-	
-	public void setOccurrence(int occurrence)
-	{
-		this.occurrence = occurrence;
-	}
-
 	public ArrayList<Node> getChildren()
 	{
 		return children;
@@ -144,53 +153,95 @@ public class Node implements Comparable<Node>
 	
 	public void generateChildren(HashMap<Integer, Integer> history)
 	{
-		int topBound = -1;
-		int bottomBound = Board.BOARD_SIZE;
-		int leftBound = -1;
-		int rightBound = Board.BOARD_SIZE;
+		//TODO: combine child value and history heuristics
 		for(int row = 0; row < Board.BOARD_SIZE; row++)
 		{
 			for(int col = 0; col < Board.BOARD_SIZE; col++)
-				if(topBound == -1 && grid[row][col].getType() != Stone.EMPTY.type())
-					topBound = row;
-			for(int col = Board.BOARD_SIZE-1; col >= 0; col--)
-				if(bottomBound == Board.BOARD_SIZE && grid[row][col].getType() != Stone.EMPTY.type())
-					bottomBound = row;
-			if(topBound != -1 && bottomBound != Board.BOARD_SIZE)
-				break;
-		}
-		for(int col = 0; col < Board.BOARD_SIZE; col++)
-		{
-			for(int row = 0; row < Board.BOARD_SIZE; row++)
-				if(leftBound == -1 && grid[row][col].getType() != Stone.EMPTY.type())
-					leftBound = col;
-			for(int row = Board.BOARD_SIZE-1; row >= 0; row--)
-				if(rightBound == Board.BOARD_SIZE && grid[row][col].getType() != Stone.EMPTY.type())
-					rightBound = col;
-			if(leftBound != -1 && rightBound != Board.BOARD_SIZE)
-				break;
-		}
-		for(int row = topBound-radius; row <= bottomBound+radius; row++)
-		{
-			for(int col = leftBound-radius; col <= rightBound+radius; col++)
 			{
-				try
+				if(grid[row][col].getType() == Stone.EMPTY.type())
 				{
-					if(grid[row][col].getType() == Stone.EMPTY.type())
+					Move move = new Move(grid[row][col]);
+					move.generateCostRest();
+					if(move.isFive())
+						fiveSquares.add(move);
+					else if(move.isStraightFour())
+						fourSquares.add(move);
+				}
+			}
+		}
+		if(fiveSquares.size() > 0)
+		{
+			Node child = nextNode(fiveSquares.get(0));
+			children.add(child);
+			child.setParent(this);
+			child.calcValue();
+		}
+		else if(fourSquares.size() > 0)
+		{
+			Node child = nextNode(fourSquares.get(0));
+			children.add(child);
+			child.setParent(this);
+			child.calcValue();
+		}
+		else if(opponentThreat())
+		{
+			HashSet<Cell> forcedMoves = new HashSet<Cell>();
+			for(HashSet<Cell> cost: costSquares)
+				for(Cell costSquare: cost)
+					forcedMoves.add(costSquare);
+			for(Cell cell: forcedMoves)
+			{
+				Node child = nextNode(new Move(cell));
+				children.add(child);
+				child.setParent(this);
+				child.calcValue();
+			}
+		}
+		else
+		{
+			HashSet<Cell> cellToExamine = new HashSet<Cell>(Node.getCellToExamine());
+			if(move != null)
+			{
+				for(int row = -radius; row <= radius; row++)
+				{
+					for(int col = -radius; col <= radius; col++)
 					{
-						Node child = nextNode(new Move(grid[row][col]));
-						children.add(child);
-						Integer occurrence = history.get(child.getZobristKey());
-						if(occurrence != null)
-							child.setOccurrence(occurrence);
+						if(row == 0 && col == 0)
+							continue;
+						try
+						{
+							Cell cell = grid[move.getCell().getRow()][move.getCell().getCol()];
+							if(cell.getType() == Stone.EMPTY.type())
+								cellToExamine.add(cell);
+						}
+						catch(ArrayIndexOutOfBoundsException e) {continue;}
 					}
 				}
-				catch(ArrayIndexOutOfBoundsException e) {continue;}
+			}
+			for(Cell cell: cellToExamine)
+			{
+				Node child = nextNode(new Move(cell));
+				children.add(child);
+				child.setParent(this);
+				child.calcValue();
+				Integer occurrence = history.get(child.getMove().hashCode());
+				if(occurrence != null)
+					child.getMove().setOccurrence(occurrence);
 			}
 		}
 		children.sort((n1, n2) -> n1.compareTo(n2));
 	}
 	
+	public Node getParent()
+	{
+		return parent;
+	}
+
+	public void setParent(Node parent)
+	{
+		this.parent = parent;
+	}
+
 	public int getZobristKey()
 	{
 		return zobristKey;
@@ -280,6 +331,38 @@ public class Node implements Comparable<Node>
 		return nextNode;
 	}
 	
+	public boolean opponentThreat()
+	{
+		int threatCount = 0;
+		if(getTurn() == Board.BLACK_TURN)
+		{
+			for(Cell stone: whiteStones)
+			{
+				if(stone.five())
+					threatCount++;
+				if(stone.straightFours())
+					threatCount++;
+				threatCount += stone.fours(costSquares, restSquares).size();
+				threatCount += stone.threes(costSquares, restSquares).size();
+				threatCount += stone.brokenThrees(costSquares, restSquares).size();
+			}
+		}
+		else
+		{
+			for(Cell stone: blackStones)
+			{
+				if(stone.five())
+					threatCount++;
+				if(stone.straightFours())
+					threatCount++;
+				threatCount += stone.fours(costSquares, restSquares).size();
+				threatCount += stone.threes(costSquares, restSquares).size();
+				threatCount += stone.brokenThrees(costSquares, restSquares).size();
+			}
+		}
+		return threatCount > 0;
+	}
+	
 	@Override
 	public boolean equals(Object obj)
 	{
@@ -302,6 +385,7 @@ public class Node implements Comparable<Node>
 	@Override
 	public int compareTo(Node o)
 	{
-		return o.getOccurrence() - occurrence;
+		//return move.compareTo(o.getMove());
+		return o.getValue() - value;
 	}
 }

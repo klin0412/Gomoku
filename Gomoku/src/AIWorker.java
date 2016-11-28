@@ -1,16 +1,20 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Stack;
 
 public class AIWorker
 {
-	public static final int MAX_DEPTH = 7;
+	public static final int MAX_DEPTH = 5;
 	
 	private Node rootNode;
 	private HashMap<Integer, MapEntry> transpositionTable;
 	private HashMap<Integer, Integer> history;
 	private ArrayList<Move> threatVariation;
+	private LinkedList<Node> exactNodes;
+	private HashMap<Integer, Integer> bestMoves;
 	private Stack<Move> principalVariation;
 	private int startTime, maxTime;
 	public int nodeExp;
@@ -22,27 +26,52 @@ public class AIWorker
 		transpositionTable = new HashMap<Integer, MapEntry>();
 		history = new HashMap<Integer, Integer>();
 		threatVariation = new ArrayList<Move>();
+		exactNodes = new LinkedList<Node>();
+		bestMoves = new HashMap<Integer, Integer>();
 		principalVariation = new Stack<Move>();
 		maxTime = 10000;
 	}
-	
+
 	public Node getRootNode()
 	{
 		return rootNode;
 	}
-	
-	public ArrayList<Move> getThreatVariation()
-	{
-		return threatVariation;
-	}
 
-	public Move bestMove()
+	public Move bestMove(int value)
 	{
-		System.out.println(principalVariation.size());
-		if(principalVariation.size()> 0)
+		//TODO: correct - successfully found winning sequence without threat space but fail to retrieve
+		if(principalVariation.size() == 1)
 			return principalVariation.pop();
-		else
-			return null;
+		for(int i = exactNodes.size()-1; i >= 0; i--)
+			if(exactNodes.get(i).getValue() != value)
+				exactNodes.remove(i);
+		ArrayList<Node> nodes = new ArrayList<Node>();
+		for(Node node: exactNodes)
+		{
+			principalVariation.clear();
+			while(node.getParent() != null)
+			{
+				principalVariation.push(node.getMove());
+				node = node.getParent();
+			}
+			Integer occurrence = bestMoves.get(principalVariation.peek().hashCode());
+			if(occurrence == null)
+			{
+				bestMoves.put(principalVariation.peek().hashCode(), 1);
+				nodes.add(rootNode.nextNode(principalVariation.peek()));
+			}
+			else
+			{
+				principalVariation.peek().setOccurrence(occurrence+1);
+				bestMoves.put(principalVariation.peek().hashCode(), occurrence+1);
+			}
+		}
+		nodes.sort((n1, n2) -> n1.compareTo(n2));
+		ArrayList<Move> moves = new ArrayList<Move>();
+		for(Node node: nodes)
+			moves.add(node.getMove());
+		System.out.println(Arrays.toString(moves.toArray()));
+		return moves.get(0);
 	}
 	
 	//Threat Space Search: http://vanilla47.com/PDFs/Gomoku%20Renju%20Pente/go-moku-and-threat.pdf
@@ -52,25 +81,26 @@ public class AIWorker
 	{
 		startTime = (int)(System.nanoTime()/1000000);
 		int firstGuess = threatSpace(rootNode);
+		System.out.println("Score: "+firstGuess);
 		if(firstGuess > 0)
 		{
 			principalVariation.push(threatVariation.get(0));
 			return firstGuess;
-		}/*
+		}
 		for(int depth = 1; depth < MAX_DEPTH; depth++)
 		{
-			//TODO: speed up search algorithm and return correct move
+			exactNodes.clear();
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)
 				break;
-		}*/
+		}
 		return firstGuess;
 	}
 	
 	private int threatSpace(Node node)
 	{
 		threatVariation.clear();
-		if(opponentThreat(node))
+		if(node.opponentThreat())
 			return 0;
 		if(node.getFiveSquares().size() > 0)
 		{
@@ -99,7 +129,7 @@ public class AIWorker
 				if(prevMove == null || rest.contains(prevMove.getCell()))
 				{
 					Node nextRespondedNode = node.nextRespondedNode(move);
-					if(opponentThreat(node))
+					if(node.opponentThreat())
 						return 0;
 					threatVariation.add(nextRespondedNode.getMove());
 					nextRespondedNode.initGainSquares();
@@ -107,13 +137,13 @@ public class AIWorker
 					{
 						Node finalNode = nextRespondedNode.nextNode(nextMove);
 						threatVariation.add(finalNode.getMove());
-						return -finalNode.calcValue();
+						return finalNode.calcValue();
 					}
 					for(Move nextMove: nextRespondedNode.getFourSquares())
 					{
 						Node finalNode = nextRespondedNode.nextNode(nextMove);
 						threatVariation.add(finalNode.getMove());
-						return -finalNode.calcValue();
+						return finalNode.calcValue();
 					}
 					int result = threatSpace(nextRespondedNode, move);
 					if(result == 0)
@@ -127,38 +157,6 @@ public class AIWorker
 			}
 		}
 		return 0;
-	}
-	
-	private boolean opponentThreat(Node node)
-	{
-		int threatCount = 0;
-		if(node.getTurn() == Board.BLACK_TURN)
-		{
-			for(Cell stone: node.getWhiteStones())
-			{
-				if(stone.five())
-					threatCount++;
-				if(stone.straightFours())
-					threatCount++;
-				threatCount += stone.fours(null, null).size();
-				threatCount += stone.threes(null, null).size();
-				threatCount += stone.brokenThrees(null, null).size();
-			}
-		}
-		else
-		{
-			for(Cell stone: node.getBlackStones())
-			{
-				if(stone.five())
-					threatCount++;
-				if(stone.straightFours())
-					threatCount++;
-				threatCount += stone.fours(null, null).size();
-				threatCount += stone.threes(null, null).size();
-				threatCount += stone.brokenThrees(null, null).size();
-			}
-		}
-		return threatCount > 0;
 	}
 	
 	private int MTDf(int firstGuess, int depth)
@@ -184,7 +182,6 @@ public class AIWorker
 	
 	private int alphaBetaTT(Node node, int alpha, int beta, int depth)
 	{
-		//TODO: understand the principalVariation
 		MapEntry entry = transpositionTable.get(node.getZobristKey());
 		if(entry != null && entry.getDepth() >= depth)
 		{
@@ -201,47 +198,55 @@ public class AIWorker
 		int value;
 		if(depth == 0)
 		{
-			value = node.calcValue();
+			value = node.getValue();
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, value, MapEntry.EXACT));
-			principalVariation.clear();
+			exactNodes.add(node);
 			return value;
 		}
 		int best = -Score.FIVE.value()-1;
-		node.generateChildren(history);
+		if(node.getChildren().size() == 0)
+			node.generateChildren(history);
 		for(Node child: node.getChildren())
 		{
 			nodeExp++;
-			value = threatSpace(child);
-			if(value > 0)
-			{
+			value = -alphaBetaTT(child, -beta, -alpha, depth-1);
+			if(value > best)
 				best = value;
-				principalVariation.push(threatVariation.get(0));
-				principalVariation.push(node.getMove());
-			}
-			else
+			if(best > alpha)
 			{
-				value = -alphaBetaTT(child, -beta, -alpha, depth-1);
-				if(value > best)
-					best = value;
-				if(best > alpha)
-				{
-					alpha = best;
-					Integer occurrence = history.get(node.getZobristKey());
-					if(occurrence == null)
-						history.put(node.getZobristKey(), 0);
-					else
-						history.put(node.getZobristKey(), occurrence+1);
-					principalVariation.push(node.getMove());
-				}
-				if(best >= beta)
-					break;
+				alpha = best;
+				Integer occurrence = null;
+				if(node.getMove() != null)
+					occurrence = history.get(node.getMove().hashCode());
+				if(occurrence == null && node.getMove() != null)
+					history.put(node.getMove().hashCode(), 0);
+				else if(node.getMove() != null)
+					history.put(node.getMove().hashCode(), occurrence+1);
 			}
+			if(best >= beta)
+				break;
 		}
 		
 		if(best <= alpha)
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.LOWERBOUND));
 		else if(best >= beta)
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.UPPERBOUND));
+		else
+			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
+		return best;
+	}
+}
+ry.UPPERBOUND));
+		else
+			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
+		return best;
+	}
+}y(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.UPPERBOUND));
+		else
+			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
+		return best;
+	}
+}), new MapEntry(node.getZobristKey(), depth, best, MapEntry.UPPERBOUND));
 		else
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
 		return best;
