@@ -236,19 +236,3 @@ public class AIWorker
 		return best;
 	}
 }
-ry.UPPERBOUND));
-		else
-			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
-		return best;
-	}
-}y(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.UPPERBOUND));
-		else
-			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
-		return best;
-	}
-}), new MapEntry(node.getZobristKey(), depth, best, MapEntry.UPPERBOUND));
-		else
-			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
-		return best;
-	}
-}
