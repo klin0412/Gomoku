@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -6,7 +7,7 @@ import java.util.Stack;
 
 public class AIWorker
 {
-	public static final int MAX_DEPTH = 7;
+	public static final int MAX_DEPTH = 5;
 	
 	private Node rootNode;
 	private HashMap<Integer, MapEntry> transpositionTable;
@@ -30,23 +31,21 @@ public class AIWorker
 		principalVariation = new Stack<Move>();
 		maxTime = 10000;
 	}
-	
+
 	public Node getRootNode()
 	{
 		return rootNode;
 	}
-	
-	public ArrayList<Move> getThreatVariation()
-	{
-		return threatVariation;
-	}
 
 	public Move bestMove(int value)
 	{
+		//TODO: correct - successfully found winning sequence without threat space but fail to retrieve
+		if(principalVariation.size() == 1)
+			return principalVariation.pop();
 		for(int i = exactNodes.size()-1; i >= 0; i--)
 			if(exactNodes.get(i).getValue() != value)
 				exactNodes.remove(i);
-		ArrayList<Move> moves = new ArrayList<Move>();
+		ArrayList<Node> nodes = new ArrayList<Node>();
 		for(Node node: exactNodes)
 		{
 			principalVariation.clear();
@@ -59,7 +58,7 @@ public class AIWorker
 			if(occurrence == null)
 			{
 				bestMoves.put(principalVariation.peek().hashCode(), 1);
-				moves.add(principalVariation.peek());
+				nodes.add(rootNode.nextNode(principalVariation.peek()));
 			}
 			else
 			{
@@ -67,9 +66,11 @@ public class AIWorker
 				bestMoves.put(principalVariation.peek().hashCode(), occurrence+1);
 			}
 		}
-		moves.sort((m1, m2) -> m1.compareTo(m2));
-		//for(Move move: moves)
-			//System.out.println(move.getOccurrence());
+		nodes.sort((n1, n2) -> n1.compareTo(n2));
+		ArrayList<Move> moves = new ArrayList<Move>();
+		for(Node node: nodes)
+			moves.add(node.getMove());
+		System.out.println(Arrays.toString(moves.toArray()));
 		return moves.get(0);
 	}
 	
@@ -80,6 +81,7 @@ public class AIWorker
 	{
 		startTime = (int)(System.nanoTime()/1000000);
 		int firstGuess = threatSpace(rootNode);
+		System.out.println("Score: "+firstGuess);
 		if(firstGuess > 0)
 		{
 			principalVariation.push(threatVariation.get(0));
@@ -87,7 +89,6 @@ public class AIWorker
 		}
 		for(int depth = 1; depth < MAX_DEPTH; depth++)
 		{
-			//TODO: speed up search algorithm and return correct move
 			exactNodes.clear();
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)
@@ -99,7 +100,7 @@ public class AIWorker
 	private int threatSpace(Node node)
 	{
 		threatVariation.clear();
-		if(opponentThreat(node))
+		if(node.opponentThreat())
 			return 0;
 		if(node.getFiveSquares().size() > 0)
 		{
@@ -128,7 +129,7 @@ public class AIWorker
 				if(prevMove == null || rest.contains(prevMove.getCell()))
 				{
 					Node nextRespondedNode = node.nextRespondedNode(move);
-					if(opponentThreat(node))
+					if(node.opponentThreat())
 						return 0;
 					threatVariation.add(nextRespondedNode.getMove());
 					nextRespondedNode.initGainSquares();
@@ -158,38 +159,6 @@ public class AIWorker
 		return 0;
 	}
 	
-	private boolean opponentThreat(Node node)
-	{
-		int threatCount = 0;
-		if(node.getTurn() == Board.BLACK_TURN)
-		{
-			for(Cell stone: node.getWhiteStones())
-			{
-				if(stone.five())
-					threatCount++;
-				if(stone.straightFours())
-					threatCount++;
-				threatCount += stone.fours(null, null).size();
-				threatCount += stone.threes(null, null).size();
-				threatCount += stone.brokenThrees(null, null).size();
-			}
-		}
-		else
-		{
-			for(Cell stone: node.getBlackStones())
-			{
-				if(stone.five())
-					threatCount++;
-				if(stone.straightFours())
-					threatCount++;
-				threatCount += stone.fours(null, null).size();
-				threatCount += stone.threes(null, null).size();
-				threatCount += stone.brokenThrees(null, null).size();
-			}
-		}
-		return threatCount > 0;
-	}
-	
 	private int MTDf(int firstGuess, int depth)
 	{
 		int score = firstGuess;
@@ -213,7 +182,6 @@ public class AIWorker
 	
 	private int alphaBetaTT(Node node, int alpha, int beta, int depth)
 	{
-		//TODO: understand the principalVariation
 		MapEntry entry = transpositionTable.get(node.getZobristKey());
 		if(entry != null && entry.getDepth() >= depth)
 		{
@@ -230,13 +198,14 @@ public class AIWorker
 		int value;
 		if(depth == 0)
 		{
-			value = node.calcValue();
+			value = node.getValue();
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, value, MapEntry.EXACT));
 			exactNodes.add(node);
 			return value;
 		}
 		int best = -Score.FIVE.value()-1;
-		node.generateChildren(history);
+		if(node.getChildren().size() == 0)
+			node.generateChildren(history);
 		for(Node child: node.getChildren())
 		{
 			nodeExp++;

@@ -389,11 +389,14 @@ public class Cell
 	@Override
 	public String toString()
 	{
+		//return row+"x"+col;
+		
 		if(type == Stone.BLACK.type())
 			return "●";
 		else if(type == Stone.WHITE.type())
 			return "○";
 		else
 			return " ";
+			
 	}
 }
