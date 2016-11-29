@@ -28,6 +28,11 @@ public class AIWorker
 	{
 		return rootNode;
 	}
+	
+	public ArrayList<Move> getThreatVariation()
+	{
+		return threatVariation;
+	}
 
 	public Move bestMove(int value)
 	{
@@ -39,13 +44,11 @@ public class AIWorker
 		try
 		{
 			Board.getInstance().nextTurn();
-			AIWorker solver = new AIWorker(Board.getInstance().toNode());
+			Node node = Board.getInstance().toNode();
 			Board.getInstance().lastTurn();
-			if(Board.getInstance().getDTurn() == 1)
-			{
-				int opponentValue = solver.iterativeDeepening();
-				return solver.bestMove(opponentValue);
-			}
+			AIWorker worker = new AIWorker(node);
+			if(worker.threatSpace(node) != 0)
+				return worker.getThreatVariation().get(0);
 		}
 		catch(StackOverflowError e) {return rootNode.getChildren().get(0).getMove();}
 		return null;
@@ -72,7 +75,7 @@ public class AIWorker
 		return firstGuess;
 	}
 	
-	private int threatSpace(Node node)
+	public int threatSpace(Node node)
 	{
 		threatVariation.clear();
 		if(node.opponentThreat())
