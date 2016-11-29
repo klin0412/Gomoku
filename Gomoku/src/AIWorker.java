@@ -1,8 +1,6 @@
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Stack;
 
 public class AIWorker
@@ -11,10 +9,7 @@ public class AIWorker
 	
 	private Node rootNode;
 	private HashMap<Integer, MapEntry> transpositionTable;
-	private HashMap<Integer, Integer> history;
 	private ArrayList<Move> threatVariation;
-	private LinkedList<Node> exactNodes;
-	private HashMap<Integer, Integer> bestMoves;
 	private Stack<Move> principalVariation;
 	private int startTime, maxTime;
 	public int nodeExp;
@@ -24,10 +19,7 @@ public class AIWorker
 		this.rootNode = rootNode;
 		rootNode.initGainSquares();
 		transpositionTable = new HashMap<Integer, MapEntry>();
-		history = new HashMap<Integer, Integer>();
 		threatVariation = new ArrayList<Move>();
-		exactNodes = new LinkedList<Node>();
-		bestMoves = new HashMap<Integer, Integer>();
 		principalVariation = new Stack<Move>();
 		maxTime = 10000;
 	}
@@ -39,39 +31,24 @@ public class AIWorker
 
 	public Move bestMove(int value)
 	{
-		//TODO: correct - successfully found winning sequence without threat space but fail to retrieve
 		if(principalVariation.size() == 1)
 			return principalVariation.pop();
-		for(int i = exactNodes.size()-1; i >= 0; i--)
-			if(exactNodes.get(i).getValue() != value)
-				exactNodes.remove(i);
-		ArrayList<Node> nodes = new ArrayList<Node>();
-		for(Node node: exactNodes)
+		for(Node child: rootNode.getChildren())
+			if(child.getValue() == value)
+				return child.getMove();
+		try
 		{
-			principalVariation.clear();
-			while(node.getParent() != null)
+			Board.getInstance().nextTurn();
+			AIWorker solver = new AIWorker(Board.getInstance().toNode());
+			Board.getInstance().lastTurn();
+			if(Board.getInstance().getDTurn() == 1)
 			{
-				principalVariation.push(node.getMove());
-				node = node.getParent();
-			}
-			Integer occurrence = bestMoves.get(principalVariation.peek().hashCode());
-			if(occurrence == null)
-			{
-				bestMoves.put(principalVariation.peek().hashCode(), 1);
-				nodes.add(rootNode.nextNode(principalVariation.peek()));
-			}
-			else
-			{
-				principalVariation.peek().setOccurrence(occurrence+1);
-				bestMoves.put(principalVariation.peek().hashCode(), occurrence+1);
+				int opponentValue = solver.iterativeDeepening();
+				return solver.bestMove(opponentValue);
 			}
 		}
-		nodes.sort((n1, n2) -> n1.compareTo(n2));
-		ArrayList<Move> moves = new ArrayList<Move>();
-		for(Node node: nodes)
-			moves.add(node.getMove());
-		System.out.println(Arrays.toString(moves.toArray()));
-		return moves.get(0);
+		catch(StackOverflowError e) {return rootNode.getChildren().get(0).getMove();}
+		return null;
 	}
 	
 	//Threat Space Search: http://vanilla47.com/PDFs/Gomoku%20Renju%20Pente/go-moku-and-threat.pdf
@@ -81,15 +58,13 @@ public class AIWorker
 	{
 		startTime = (int)(System.nanoTime()/1000000);
 		int firstGuess = threatSpace(rootNode);
-		System.out.println("Score: "+firstGuess);
 		if(firstGuess > 0)
 		{
 			principalVariation.push(threatVariation.get(0));
 			return firstGuess;
 		}
-		for(int depth = 1; depth < MAX_DEPTH; depth++)
+		for(int depth = 1; depth <= MAX_DEPTH; depth++)
 		{
-			exactNodes.clear();
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)
 				break;
@@ -106,16 +81,16 @@ public class AIWorker
 		{
 			Node finalNode = node.nextNode(node.getFiveSquares().get(0));
 			threatVariation.add(finalNode.getMove());
-			return -finalNode.calcValue();
+			return -finalNode.getValue();
 		}
 		else if(node.getFourSquares().size() > 0)
 		{
 			Node finalNode = node.nextNode(node.getFourSquares().get(0));
 			threatVariation.add(finalNode.getMove());
-			return -finalNode.calcValue();
+			return -finalNode.getValue();
 		}
 		else if(node.getGainSquares().size() > 0)
-			return threatSpace(rootNode, null);
+			return threatSpace(node, null);
 		else
 			return 0;
 	}
@@ -137,13 +112,13 @@ public class AIWorker
 					{
 						Node finalNode = nextRespondedNode.nextNode(nextMove);
 						threatVariation.add(finalNode.getMove());
-						return finalNode.calcValue();
+						return finalNode.getValue();
 					}
 					for(Move nextMove: nextRespondedNode.getFourSquares())
 					{
 						Node finalNode = nextRespondedNode.nextNode(nextMove);
 						threatVariation.add(finalNode.getMove());
-						return finalNode.calcValue();
+						return finalNode.getValue();
 					}
 					int result = threatSpace(nextRespondedNode, move);
 					if(result == 0)
@@ -200,12 +175,11 @@ public class AIWorker
 		{
 			value = node.getValue();
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, value, MapEntry.EXACT));
-			exactNodes.add(node);
 			return value;
 		}
 		int best = -Score.FIVE.value()-1;
 		if(node.getChildren().size() == 0)
-			node.generateChildren(history);
+			node.generateChildren();
 		for(Node child: node.getChildren())
 		{
 			nodeExp++;
@@ -213,18 +187,10 @@ public class AIWorker
 			if(value > best)
 				best = value;
 			if(best > alpha)
-			{
 				alpha = best;
-				Integer occurrence = null;
-				if(node.getMove() != null)
-					occurrence = history.get(node.getMove().hashCode());
-				if(occurrence == null && node.getMove() != null)
-					history.put(node.getMove().hashCode(), 0);
-				else if(node.getMove() != null)
-					history.put(node.getMove().hashCode(), occurrence+1);
-			}
 			if(best >= beta)
 				break;
+			child.setValue(best);
 		}
 		
 		if(best <= alpha)

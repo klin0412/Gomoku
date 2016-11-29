@@ -110,6 +110,11 @@ public class Board extends BorderPane
 		turn += dTurn;
 	}
 	
+	public void lastTurn()
+	{
+		turn -= dTurn;
+	}
+	
 	public int getDTurn()
 	{
 		return dTurn;
@@ -148,7 +153,7 @@ public class Board extends BorderPane
 			lastCell = blackStones.remove(blackStones.size()-1);
 		lastCell.getTile().clear();
 		lastCell.setType(Stone.EMPTY.type());
-		turn--;
+		lastTurn();
 		Move move = new Move(lastCell);
 		System.out.println(move+" removed");
 	}

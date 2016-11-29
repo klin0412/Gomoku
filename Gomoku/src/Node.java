@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 
 public class Node implements Comparable<Node>
@@ -33,7 +32,7 @@ public class Node implements Comparable<Node>
 		gainSquares = new ArrayList<Move>();
 		costSquares = new ArrayList<HashSet<Cell>>();
 		restSquares = new ArrayList<HashSet<Cell>>();
-		value = 0;
+		value = calcValue();
 		parent = null;
 		children = new ArrayList<Node>();
 		zobristKey = (int)hash();
@@ -94,7 +93,7 @@ public class Node implements Comparable<Node>
 		return gainSquares;
 	}
 	
-	public int calcValue()
+	private int calcValue()
 	{
 		int score = 0;
 		for(Cell stone: blackStones)
@@ -151,9 +150,8 @@ public class Node implements Comparable<Node>
 		return children;
 	}
 	
-	public void generateChildren(HashMap<Integer, Integer> history)
+	public void generateChildren()
 	{
-		//TODO: combine child value and history heuristics
 		for(int row = 0; row < Board.BOARD_SIZE; row++)
 		{
 			for(int col = 0; col < Board.BOARD_SIZE; col++)
@@ -174,16 +172,8 @@ public class Node implements Comparable<Node>
 			Node child = nextNode(fiveSquares.get(0));
 			children.add(child);
 			child.setParent(this);
-			child.calcValue();
 		}
-		else if(fourSquares.size() > 0)
-		{
-			Node child = nextNode(fourSquares.get(0));
-			children.add(child);
-			child.setParent(this);
-			child.calcValue();
-		}
-		else if(opponentThreat())
+		else if(fourThreat())
 		{
 			HashSet<Cell> forcedMoves = new HashSet<Cell>();
 			for(HashSet<Cell> cost: costSquares)
@@ -194,7 +184,25 @@ public class Node implements Comparable<Node>
 				Node child = nextNode(new Move(cell));
 				children.add(child);
 				child.setParent(this);
-				child.calcValue();
+			}
+		}
+		else if(fourSquares.size() > 0)
+		{
+			Node child = nextNode(fourSquares.get(0));
+			children.add(child);
+			child.setParent(this);
+		}
+		else if(threeThreat())
+		{
+			HashSet<Cell> forcedMoves = new HashSet<Cell>();
+			for(HashSet<Cell> cost: costSquares)
+				for(Cell costSquare: cost)
+					forcedMoves.add(costSquare);
+			for(Cell cell: forcedMoves)
+			{
+				Node child = nextNode(new Move(cell));
+				children.add(child);
+				child.setParent(this);
 			}
 		}
 		else
@@ -223,10 +231,6 @@ public class Node implements Comparable<Node>
 				Node child = nextNode(new Move(cell));
 				children.add(child);
 				child.setParent(this);
-				child.calcValue();
-				Integer occurrence = history.get(child.getMove().hashCode());
-				if(occurrence != null)
-					child.getMove().setOccurrence(occurrence);
 			}
 		}
 		children.sort((n1, n2) -> n1.compareTo(n2));
@@ -333,6 +337,11 @@ public class Node implements Comparable<Node>
 	
 	public boolean opponentThreat()
 	{
+		return fourThreat() || threeThreat();
+	}
+	
+	private boolean fourThreat()
+	{
 		int threatCount = 0;
 		if(getTurn() == Board.BLACK_TURN)
 		{
@@ -343,8 +352,6 @@ public class Node implements Comparable<Node>
 				if(stone.straightFours())
 					threatCount++;
 				threatCount += stone.fours(costSquares, restSquares).size();
-				threatCount += stone.threes(costSquares, restSquares).size();
-				threatCount += stone.brokenThrees(costSquares, restSquares).size();
 			}
 		}
 		else
@@ -356,6 +363,26 @@ public class Node implements Comparable<Node>
 				if(stone.straightFours())
 					threatCount++;
 				threatCount += stone.fours(costSquares, restSquares).size();
+			}
+		}
+		return threatCount > 0;
+	}
+	
+	private boolean threeThreat()
+	{
+		int threatCount = 0;
+		if(getTurn() == Board.BLACK_TURN)
+		{
+			for(Cell stone: whiteStones)
+			{
+				threatCount += stone.threes(costSquares, restSquares).size();
+				threatCount += stone.brokenThrees(costSquares, restSquares).size();
+			}
+		}
+		else
+		{
+			for(Cell stone: blackStones)
+			{
 				threatCount += stone.threes(costSquares, restSquares).size();
 				threatCount += stone.brokenThrees(costSquares, restSquares).size();
 			}
@@ -380,12 +407,12 @@ public class Node implements Comparable<Node>
 			str += "\n";
 		}
 		return str;
+		//return move+": "+value;
 	}
 
 	@Override
 	public int compareTo(Node o)
 	{
-		//return move.compareTo(o.getMove());
 		return o.getValue() - value;
 	}
 }

@@ -77,7 +77,6 @@ public class Tile extends Canvas
 				if(Board.getInstance().getDTurn() == 1)
 				{
 					int value = solver.iterativeDeepening();
-					System.out.println("Value: "+value);
 					System.out.println("Play: "+solver.bestMove(value));
 				}
 			}
@@ -105,13 +104,12 @@ public class Tile extends Canvas
 				Node.getCellToExamine().remove(cell);
 				Board.getInstance().nextTurn(); //next turn, so AI work as black
 				
-				AIWorker solver = new AIWorker(Board.getInstance().toNode());
+				/*AIWorker solver = new AIWorker(Board.getInstance().toNode());
 				if(Board.getInstance().getDTurn() == 1)
 				{
 					int value = solver.iterativeDeepening();
-					System.out.println("Value: "+value);
 					System.out.println("Play: "+solver.bestMove(value));
-				}
+				}*/
 			}
 		});
 	}
