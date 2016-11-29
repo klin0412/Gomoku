@@ -5,7 +5,7 @@ import java.util.Stack;
 
 public class AIWorker
 {
-	public static final int MAX_DEPTH = 5;
+	public static final int MAX_DEPTH = 7;
 	
 	private Node rootNode;
 	private HashMap<Integer, MapEntry> transpositionTable;
@@ -41,17 +41,14 @@ public class AIWorker
 		for(Node child: rootNode.getChildren())
 			if(child.getValue() == value)
 				return child.getMove();
-		try
-		{
-			Board.getInstance().nextTurn();
-			Node node = Board.getInstance().toNode();
-			Board.getInstance().lastTurn();
-			AIWorker worker = new AIWorker(node);
-			if(worker.threatSpace(node) != 0)
-				return worker.getThreatVariation().get(0);
-		}
-		catch(StackOverflowError e) {return rootNode.getChildren().get(0).getMove();}
-		return null;
+		Board.getInstance().nextTurn();
+		Node node = Board.getInstance().toNode();
+		Board.getInstance().lastTurn();
+		AIWorker worker = new AIWorker(node);
+		if(worker.threatSpace(node) != 0)
+			return worker.getThreatVariation().get(0);
+		else
+			return rootNode.getChildren().get(0).getMove();
 	}
 	
 	//Threat Space Search: http://vanilla47.com/PDFs/Gomoku%20Renju%20Pente/go-moku-and-threat.pdf
@@ -66,7 +63,7 @@ public class AIWorker
 			principalVariation.push(threatVariation.get(0));
 			return firstGuess;
 		}
-		for(int depth = 1; depth <= MAX_DEPTH; depth++)
+		for(int depth = 1; depth < MAX_DEPTH; depth++)
 		{
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)

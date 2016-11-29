@@ -50,68 +50,74 @@ public class Tile extends Canvas
 				System.out.println(move);
 			}
 			if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.BLACK_TURN)
-			{
-				gc.setGlobalAlpha(1.0); //draws solid image
-				gc.drawImage(Stone.BLACK.image(), offset, offset);
-				type = Stone.BLACK.type();
-				cell.setType(Stone.BLACK.type());
-				Board.getInstance().getBlackStones().add(cell);
-				Cell[][] grid = Board.getInstance().getGrid();
-				for(int i = -Node.getRadius(); i <= Node.getRadius(); i++)
-				{
-					for(int j = -Node.getRadius(); j <= Node.getRadius(); j++)
-					{
-						try
-						{
-							Cell cell = grid[row+i][col+j];
-							if(cell.getType() == Stone.EMPTY.type())
-								Node.getCellToExamine().add(cell);
-						}
-						catch(ArrayIndexOutOfBoundsException ex) {continue;}
-					}
-				}
-				Node.getCellToExamine().remove(cell);
-				Board.getInstance().nextTurn(); //next turn, so AI work as white
-				
-				AIWorker worker = new AIWorker(Board.getInstance().toNode());
-				if(Board.getInstance().getDTurn() == 1)
-				{
-					int value = worker.iterativeDeepening();
-					System.out.println("Play: "+worker.bestMove(value));
-				}
-			}
+				setBlack();
 			else if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.WHITE_TURN)
-			{
-				gc.setGlobalAlpha(1.0);
-				gc.drawImage(Stone.WHITE.image(), offset, offset);
-				type = Stone.WHITE.type();
-				cell.setType(Stone.WHITE.type());
-				Board.getInstance().getWhiteStones().add(cell);
-				Cell[][] grid = Board.getInstance().getGrid();
-				for(int i = -Node.getRadius(); i <= Node.getRadius(); i++)
-				{
-					for(int j = -Node.getRadius(); j <= Node.getRadius(); j++)
-					{
-						try
-						{
-							Cell cell = grid[row+i][col+j];
-							if(cell.getType() == Stone.EMPTY.type())
-								Node.getCellToExamine().add(cell);
-						}
-						catch(ArrayIndexOutOfBoundsException ex) {continue;}
-					}
-				}
-				Node.getCellToExamine().remove(cell);
-				Board.getInstance().nextTurn(); //next turn, so AI work as black
-				
-				/*AIWorker worker = new AIWorker(Board.getInstance().toNode());
-				if(Board.getInstance().getDTurn() == 1)
-				{
-					int value = worker.iterativeDeepening();
-					System.out.println("Play: "+worker.bestMove(value));
-				}*/
-			}
+				setWhite();
 		});
+	}
+	
+	public void setBlack()
+	{
+		gc.setGlobalAlpha(1.0); //draws solid image
+		gc.drawImage(Stone.BLACK.image(), offset, offset);
+		type = Stone.BLACK.type();
+		cell.setType(Stone.BLACK.type());
+		Board.getInstance().getBlackStones().add(cell);
+		Cell[][] grid = Board.getInstance().getGrid();
+		for(int i = -Node.getRadius(); i <= Node.getRadius(); i++)
+		{
+			for(int j = -Node.getRadius(); j <= Node.getRadius(); j++)
+			{
+				try
+				{
+					Cell cell = grid[row+i][col+j];
+					if(cell.getType() == Stone.EMPTY.type())
+						Node.getCellToExamine().add(cell);
+				}
+				catch(ArrayIndexOutOfBoundsException ex) {continue;}
+			}
+		}
+		Node.getCellToExamine().remove(cell);
+		Board.getInstance().nextTurn(); //next turn, so AI work as white
+		
+		/*AIWorker worker = new AIWorker(Board.getInstance().toNode());
+		if(Board.getInstance().getDTurn() == 1)
+		{
+			int value = worker.iterativeDeepening();
+			System.out.println("Play: "+worker.bestMove(value));
+		}*/
+	}
+	
+	public void setWhite()
+	{
+		gc.setGlobalAlpha(1.0);
+		gc.drawImage(Stone.WHITE.image(), offset, offset);
+		type = Stone.WHITE.type();
+		cell.setType(Stone.WHITE.type());
+		Board.getInstance().getWhiteStones().add(cell);
+		Cell[][] grid = Board.getInstance().getGrid();
+		for(int i = -Node.getRadius(); i <= Node.getRadius(); i++)
+		{
+			for(int j = -Node.getRadius(); j <= Node.getRadius(); j++)
+			{
+				try
+				{
+					Cell cell = grid[row+i][col+j];
+					if(cell.getType() == Stone.EMPTY.type())
+						Node.getCellToExamine().add(cell);
+				}
+				catch(ArrayIndexOutOfBoundsException ex) {continue;}
+			}
+		}
+		Node.getCellToExamine().remove(cell);
+		Board.getInstance().nextTurn(); //next turn, so AI work as black
+		
+		AIWorker worker = new AIWorker(Board.getInstance().toNode());
+		if(Board.getInstance().getDTurn() == 1)
+		{
+			int value = worker.iterativeDeepening();
+			System.out.println("Play: "+worker.bestMove(value));
+		}
 	}
 	
 	public int getRow()
