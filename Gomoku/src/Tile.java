@@ -26,15 +26,21 @@ public class Tile extends Canvas
 		
 		this.setOnMouseEntered(e ->
 		{
-			if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.BLACK_TURN)
+			if(Board.getInstance().isWon())
+				return;
+			if((Board.getInstance().getTurn() == Board.BLACK_TURN && AIWorker.getType() != Stone.BLACK.type()) ||
+			   (Board.getInstance().getTurn() == Board.WHITE_TURN && AIWorker.getType() != Stone.WHITE.type()))
 			{
-				gc.setGlobalAlpha(0.5); //draws translucent image
-				gc.drawImage(Stone.BLACK.image(), offset, offset);
-			}
-			else if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.WHITE_TURN)
-			{
-				gc.setGlobalAlpha(0.5);
-				gc.drawImage(Stone.WHITE.image(), offset, offset);
+				if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.BLACK_TURN)
+				{
+					gc.setGlobalAlpha(0.5); //draws translucent image
+					gc.drawImage(Stone.BLACK.image(), offset, offset);
+				}
+				else if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.WHITE_TURN)
+				{
+					gc.setGlobalAlpha(0.5);
+					gc.drawImage(Stone.WHITE.image(), offset, offset);
+				}
 			}
 		});
 		this.setOnMouseExited(e ->
@@ -44,15 +50,16 @@ public class Tile extends Canvas
 		});
 		this.setOnMouseClicked(e ->
 		{
-			if(type == Stone.EMPTY.type())
+			if(Board.getInstance().isWon())
+				return;
+			if((Board.getInstance().getTurn() == Board.BLACK_TURN && AIWorker.getType() != Stone.BLACK.type()) ||
+			   (Board.getInstance().getTurn() == Board.WHITE_TURN && AIWorker.getType() != Stone.WHITE.type()))
 			{
-				Move move = new Move(cell);
-				System.out.println(move);
+				if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.BLACK_TURN)
+					setBlack();
+				else if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.WHITE_TURN)
+					setWhite();
 			}
-			if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.BLACK_TURN)
-				setBlack();
-			else if(type == Stone.EMPTY.type() && Board.getInstance().getTurn() == Board.WHITE_TURN)
-				setWhite();
 		});
 	}
 	
@@ -79,13 +86,18 @@ public class Tile extends Canvas
 		}
 		Node.getCellToExamine().remove(cell);
 		Board.getInstance().nextTurn(); //next turn, so AI work as white
-		
-		/*AIWorker worker = new AIWorker(Board.getInstance().toNode());
-		if(Board.getInstance().getDTurn() == 1)
+		int five = Board.getInstance().toNode().five();
+		if(five != Stone.EMPTY.type())
 		{
-			int value = worker.iterativeDeepening();
-			System.out.println("Play: "+worker.bestMove(value));
-		}*/
+			Board.getInstance().setWon(true);
+			System.out.println("Player won!");
+		}
+		
+		if(AIWorker.getType() == Stone.WHITE.type())
+		{
+			AIWorker worker = new AIWorker(Board.getInstance().toNode());
+			worker.run();
+		}
 	}
 	
 	public void setWhite()
@@ -111,13 +123,23 @@ public class Tile extends Canvas
 		}
 		Node.getCellToExamine().remove(cell);
 		Board.getInstance().nextTurn(); //next turn, so AI work as black
-		
-		AIWorker worker = new AIWorker(Board.getInstance().toNode());
-		if(Board.getInstance().getDTurn() == 1)
+		int five = Board.getInstance().toNode().five();
+		if(five != Stone.EMPTY.type())
 		{
-			int value = worker.iterativeDeepening();
-			System.out.println("Play: "+worker.bestMove(value));
+			Board.getInstance().setWon(true);
+			System.out.println("Player won!");
 		}
+		
+		if(AIWorker.getType() == Stone.BLACK.type())
+		{
+			AIWorker worker = new AIWorker(Board.getInstance().toNode());
+			worker.run();
+		}
+	}
+	
+	public GraphicsContext getGC()
+	{
+		return gc;
 	}
 	
 	public int getRow()
@@ -138,6 +160,11 @@ public class Tile extends Canvas
 	public void setCell(Cell cell)
 	{
 		this.cell = cell;
+	}
+	
+	public void setType(int type)
+	{
+		this.type = type;
 	}
 	
 	public void clear()

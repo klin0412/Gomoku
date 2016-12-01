@@ -21,7 +21,7 @@ public class Board extends BorderPane
 	private ArrayList<Cell> blackStones, whiteStones; //ArrayList storing their respective stones
 	private long[][][] zobrist; //pseudorandom bitstrings for zobrist hashing
 	private int turn;
-	private int dTurn; //increment, 1 is normal, 2 is only black or only white
+	private boolean won;
 	
 	private Image goBoard = new Image("goBoard.jpg");
 	
@@ -72,14 +72,14 @@ public class Board extends BorderPane
 					zobrist[row][col][depth] = random.nextLong();
 		
 		turn = 0;
-		dTurn = 1;
+		won = false;
 	}
 	
 	public Cell[][] getGrid()
 	{
 		return grid;
 	}
-	
+
 	public ArrayList<Cell> getBlackStones()
 	{
 		return blackStones;
@@ -107,24 +107,24 @@ public class Board extends BorderPane
 	
 	public void nextTurn()
 	{
-		turn += dTurn;
+		turn++;
 	}
 	
 	public void lastTurn()
 	{
-		turn -= dTurn;
+		turn--;
 	}
 	
-	public int getDTurn()
+	public boolean isWon()
 	{
-		return dTurn;
+		return won;
 	}
-	
-	public void setDTurn(int dTurn)
+
+	public void setWon(boolean won)
 	{
-		this.dTurn = dTurn;
+		this.won = won;
 	}
-	
+
 	public Node toNode()
 	{
 		Cell[][] gridCopy = new Cell[BOARD_SIZE][BOARD_SIZE];
@@ -154,7 +154,5 @@ public class Board extends BorderPane
 		lastCell.getTile().clear();
 		lastCell.setType(Stone.EMPTY.type());
 		lastTurn();
-		Move move = new Move(lastCell);
-		System.out.println(move+" removed");
 	}
 }

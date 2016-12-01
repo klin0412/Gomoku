@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane fx:id="rootPane" maxHeight="585.0" maxWidth="535.0" minHeight="585.0" minWidth="535.0" prefHeight="585.0" prefWidth="535.0" style="-fx-background-color: LEMONCHIFFON;" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="Controller">
+   <center>
+      <VBox prefHeight="200.0" prefWidth="100.0" BorderPane.alignment="CENTER">
+         <children>
+            <Label fx:id="opponent" text="Opponent">
+               <font>
+                  <Font name="Meiryo UI" size="18.0" />
+               </font>
+               <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </padding>
+            </Label>
+            <Button fx:id="humanBtn" mnemonicParsing="false" style="-fx-background-color: KHAKI; -fx-border-color: GOLDENROD;">
+               <graphic>
+                  <RadioButton fx:id="humanRadioBtn" disable="true" mnemonicParsing="false" prefWidth="510.0" style="-fx-background-color: KHAKI;" text="Human">
+                     <font>
+                        <Font name="Meiryo UI" size="18.0" />
+                     </font>
+                     <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </padding>
+                     <toggleGroup>
+                        <ToggleGroup fx:id="opponents" />
+                     </toggleGroup>
+                  </RadioButton>
+               </graphic>
+               <VBox.margin>
+                  <Insets left="5.0" right="5.0" top="5.0" />
+               </VBox.margin>
+            </Button>
+            <Button fx:id="compBtn" layoutX="10.0" layoutY="37.0" mnemonicParsing="false" style="-fx-background-color: KHAKI; -fx-border-color: GOLDENROD;">
+               <graphic>
+                  <RadioButton fx:id="compRadioBtn" mnemonicParsing="false" prefWidth="510.0" selected="true" style="-fx-background-color: KHAKI;" text="Computer" toggleGroup="$opponents">
+                     <font>
+                        <Font name="Meiryo UI" size="18.0" />
+                     </font>
+                     <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </padding>
+                  </RadioButton>
+               </graphic>
+               <VBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" />
+               </VBox.margin>
+            </Button>
+            <Label fx:id="color" text="Color">
+               <font>
+                  <Font name="Meiryo UI" size="18.0" />
+               </font>
+               <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </padding>
+            </Label>
+            <Button fx:id="blackBtn" layoutX="10.0" layoutY="72.0" mnemonicParsing="false" style="-fx-background-color: BLACK;">
+               <graphic>
+                  <RadioButton fx:id="blackRadioBtn" mnemonicParsing="false" onAction="#compWhite" prefWidth="510.0" style="-fx-background-color: BLACK;" text="Black" textFill="WHITE">
+                     <font>
+                        <Font name="Meiryo UI" size="18.0" />
+                     </font>
+                     <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </padding>
+                     <toggleGroup>
+                        <ToggleGroup fx:id="colors" />
+                     </toggleGroup>
+                  </RadioButton>
+               </graphic>
+               <VBox.margin>
+                  <Insets left="5.0" right="5.0" top="5.0" />
+               </VBox.margin>
+            </Button>
+            <Button fx:id="whiteBtn" layoutX="10.0" layoutY="72.0" mnemonicParsing="false" style="-fx-background-color: WHITE;">
+               <graphic>
+                  <RadioButton fx:id="whiteRadioBtn" mnemonicParsing="false" onAction="#compBlack" prefWidth="510.0" style="-fx-background-color: WHITE;" text="White" toggleGroup="$colors">
+                     <font>
+                        <Font name="Meiryo UI" size="18.0" />
+                     </font>
+                     <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </padding>
+                  </RadioButton>
+               </graphic>
+               <VBox.margin>
+                  <Insets left="5.0" right="5.0" />
+               </VBox.margin>
+            </Button>
+            <Label fx:id="difficulty" text="Difficulty">
+               <font>
+                  <Font name="Meiryo UI" size="18.0" />
+               </font>
+               <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </padding>
+            </Label>
+            <Button fx:id="easyBtn" layoutX="10.0" layoutY="72.0" mnemonicParsing="false" style="-fx-background-color: KHAKI; -fx-border-color: GOLDENROD;">
+               <graphic>
+                  <RadioButton fx:id="easyRadioBtn" mnemonicParsing="false" onAction="#setEasyDiff" prefWidth="510.0" style="-fx-background-color: KHAKI;" text="Easy">
+                     <font>
+                        <Font name="Meiryo UI" size="18.0" />
+                     </font>
+                     <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </padding>
+                     <toggleGroup>
+                        <ToggleGroup fx:id="difficulties" />
+                     </toggleGroup>
+                  </RadioButton>
+               </graphic>
+               <VBox.margin>
+                  <Insets left="5.0" right="5.0" top="5.0" />
+               </VBox.margin>
+            </Button>
+            <Button fx:id="mediumBtn" layoutX="10.0" layoutY="72.0" mnemonicParsing="false" style="-fx-background-color: KHAKI; -fx-border-color: GOLDENROD;">
+               <graphic>
+                  <RadioButton fx:id="mediumRadioBtn" mnemonicParsing="false" onAction="#setMediumDiff" prefWidth="510.0" style="-fx-background-color: KHAKI;" text="Medium" toggleGroup="$difficulties">
+                     <font>
+                        <Font name="Meiryo UI" size="18.0" />
+                     </font>
+                     <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </padding>
+                  </RadioButton>
+               </graphic>
+               <VBox.margin>
+                  <Insets left="5.0" right="5.0" />
+               </VBox.margin>
+            </Button>
+            <Button fx:id="hardBtn" layoutX="10.0" layoutY="72.0" mnemonicParsing="false" style="-fx-background-color: KHAKI; -fx-border-color: GOLDENROD;">
+               <graphic>
+                  <RadioButton fx:id="hardRadioBtn" mnemonicParsing="false" onAction="#setHardDiff" prefWidth="510.0" style="-fx-background-color: KHAKI;" text="Hard" toggleGroup="$difficulties">
+                     <font>
+                        <Font name="Meiryo UI" size="18.0" />
+                     </font>
+                     <padding>
+                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+                     </padding>
+                  </RadioButton>
+               </graphic>
+               <VBox.margin>
+                  <Insets left="5.0" right="5.0" />
+               </VBox.margin>
+            </Button>
+         </children>
+         <BorderPane.margin>
+            <Insets left="20.0" right="20.0" />
+         </BorderPane.margin>
+      </VBox>
+   </center>
+   <bottom>
+      <HBox spacing="15.0" BorderPane.alignment="CENTER">
+         <children>
+            <Button fx:id="back" disable="true" mnemonicParsing="false" prefWidth="250.0" text="Back">
+               <font>
+                  <Font name="Meiryo UI" size="18.0" />
+               </font>
+               <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </padding>
+               <HBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </HBox.margin>
+            </Button>
+            <Button fx:id="start" defaultButton="true" mnemonicParsing="false" onAction="#start" prefWidth="250.0" text="Start">
+               <font>
+                  <Font name="Meiryo UI" size="18.0" />
+               </font>
+               <padding>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </padding>
+               <HBox.margin>
+                  <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+               </HBox.margin>
+            </Button>
+         </children>
+         <BorderPane.margin>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+         </BorderPane.margin>
+      </HBox>
+   </bottom>
+   <top>
+      <Label fx:id="title" text="New Game" BorderPane.alignment="CENTER">
+         <font>
+            <Font name="Meiryo UI" size="20.0" />
+         </font>
+         <padding>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </padding>
+         <BorderPane.margin>
+            <Insets top="15.0" />
+         </BorderPane.margin>
+      </Label>
+   </top>
+</BorderPane>

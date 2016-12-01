@@ -5,14 +5,16 @@ import java.util.Stack;
 
 public class AIWorker
 {
-	public static final int MAX_DEPTH = 7;
+	private static final int SAFE = 0;
+	private static final int RISK = 1;
 	
+	private static int maxDepth;
+	private static int type = Stone.EMPTY.type();
 	private Node rootNode;
 	private HashMap<Integer, MapEntry> transpositionTable;
 	private ArrayList<Move> threatVariation;
 	private Stack<Move> principalVariation;
 	private int startTime, maxTime;
-	public int nodeExp;
 
 	public AIWorker(Node rootNode)
 	{
@@ -22,6 +24,21 @@ public class AIWorker
 		threatVariation = new ArrayList<Move>();
 		principalVariation = new Stack<Move>();
 		maxTime = 10000;
+	}
+	
+	public static void setDifficulty(int difficulty)
+	{
+		maxDepth = difficulty;
+	}
+
+	public static int getType()
+	{
+		return type;
+	}
+
+	public static void setType(int type)
+	{
+		AIWorker.type = type;
 	}
 
 	public Node getRootNode()
@@ -45,10 +62,13 @@ public class AIWorker
 		Node node = Board.getInstance().toNode();
 		Board.getInstance().lastTurn();
 		AIWorker worker = new AIWorker(node);
-		if(worker.threatSpace(node) != 0)
+		if(worker.threatSpace(node, RISK) != 0)
 			return worker.getThreatVariation().get(0);
 		else
-			return rootNode.getChildren().get(0).getMove();
+		{
+			worker.getRootNode().generateChildren();
+			return worker.getRootNode().getChildren().get(0).getMove();
+		}
 	}
 	
 	//Threat Space Search: http://vanilla47.com/PDFs/Gomoku%20Renju%20Pente/go-moku-and-threat.pdf
@@ -57,13 +77,13 @@ public class AIWorker
 	public int iterativeDeepening()
 	{
 		startTime = (int)(System.nanoTime()/1000000);
-		int firstGuess = threatSpace(rootNode);
+		int firstGuess = threatSpace(rootNode, SAFE);
 		if(firstGuess > 0)
 		{
 			principalVariation.push(threatVariation.get(0));
 			return firstGuess;
 		}
-		for(int depth = 1; depth < MAX_DEPTH; depth++)
+		for(int depth = 1; depth < maxDepth; depth++)
 		{
 			firstGuess = MTDf(firstGuess, depth);
 			if(System.nanoTime()/1000000-startTime > maxTime)
@@ -72,11 +92,12 @@ public class AIWorker
 		return firstGuess;
 	}
 	
-	public int threatSpace(Node node)
+	public int threatSpace(Node node, int type)
 	{
 		threatVariation.clear();
-		if(node.opponentThreat())
-			return 0;
+		if(type == SAFE)
+			if(node.opponentThreat())
+				return 0;
 		if(node.getFiveSquares().size() > 0)
 		{
 			Node finalNode = node.nextNode(node.getFiveSquares().get(0));
@@ -90,12 +111,12 @@ public class AIWorker
 			return -finalNode.getValue();
 		}
 		else if(node.getGainSquares().size() > 0)
-			return threatSpace(node, null);
+			return threatSpace(node, null, type);
 		else
 			return 0;
 	}
 	
-	private int threatSpace(Node node, Move prevMove)
+	private int threatSpace(Node node, Move prevMove, int type)
 	{
 		for(Move move: node.getGainSquares())
 		{
@@ -104,8 +125,9 @@ public class AIWorker
 				if(prevMove == null || rest.contains(prevMove.getCell()))
 				{
 					Node nextRespondedNode = node.nextRespondedNode(move);
-					if(node.opponentThreat())
-						return 0;
+					if(type == SAFE)
+						if(node.opponentThreat())
+							continue;
 					threatVariation.add(nextRespondedNode.getMove());
 					nextRespondedNode.initGainSquares();
 					for(Move nextMove: nextRespondedNode.getFiveSquares())
@@ -120,7 +142,7 @@ public class AIWorker
 						threatVariation.add(finalNode.getMove());
 						return finalNode.getValue();
 					}
-					int result = threatSpace(nextRespondedNode, move);
+					int result = threatSpace(nextRespondedNode, move, type);
 					if(result == 0)
 					{
 						threatVariation.remove(threatVariation.size()-1);
@@ -182,7 +204,8 @@ public class AIWorker
 			node.generateChildren();
 		for(Node child: node.getChildren())
 		{
-			nodeExp++;
+			if(System.nanoTime()/1000000-startTime > maxTime)
+				break;
 			value = -alphaBetaTT(child, -beta, -alpha, depth-1);
 			if(value > best)
 				best = value;
@@ -200,5 +223,28 @@ public class AIWorker
 		else
 			transpositionTable.put(node.getZobristKey(), new MapEntry(node.getZobristKey(), depth, best, MapEntry.EXACT));
 		return best;
+	}
+	
+	public void run()
+	{
+		new Thread(new RunnableAI()).start();
+	}
+	
+	public class RunnableAI implements Runnable
+	{
+		public void run()
+		{
+			int value = iterativeDeepening();
+			if(type == Stone.BLACK.type())
+				bestMove(value).getCell().getTile().setBlack();
+			else if(type == Stone.WHITE.type())
+				bestMove(value).getCell().getTile().setWhite();
+			int five = Board.getInstance().toNode().five();
+			if(five != Stone.EMPTY.type())
+			{
+				Board.getInstance().setWon(true);
+				System.out.println("Computer won!");
+			}
+		}
 	}
 }

@@ -192,19 +192,6 @@ public class Node implements Comparable<Node>
 			children.add(child);
 			child.setParent(this);
 		}
-		else if(threeThreat())
-		{
-			HashSet<Cell> forcedMoves = new HashSet<Cell>();
-			for(HashSet<Cell> cost: costSquares)
-				for(Cell costSquare: cost)
-					forcedMoves.add(costSquare);
-			for(Cell cell: forcedMoves)
-			{
-				Node child = nextNode(new Move(cell));
-				children.add(child);
-				child.setParent(this);
-			}
-		}
 		else
 		{
 			HashSet<Cell> cellToExamine = new HashSet<Cell>(Node.getCellToExamine());
@@ -244,6 +231,24 @@ public class Node implements Comparable<Node>
 	public void setParent(Node parent)
 	{
 		this.parent = parent;
+	}
+	
+	public int five()
+	{
+		boolean five = false;
+		for(Cell stone: blackStones)
+		{
+			five = stone.five();
+			if(five)
+				return Stone.BLACK.type();
+		}
+		for(Cell stone: whiteStones)
+		{
+			five = stone.five();
+			if(five)
+				return Stone.WHITE.type();
+		}
+		return Stone.EMPTY.type();
 	}
 
 	public int getZobristKey()
